@@ -1,0 +1,56 @@
+---
+title: "Opioid Overdose Mortality in Georgia (2021)"
+output: html_document
+execute:
+  echo: false
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(tidyverse.quiet = TRUE)
+library(tidyverse)
+library(targets)
+library(visNetwork)
+library(knitr)
+library(kableExtra)
+tar_load(map)
+tar_load(clusters)
+```
+
+The figure below displays the results of three different spatial clustering tests applied to Georgia opioid overdose mortality counts. These tests include the Cluster Evaluation Permutation Procedure test of Turnbull et al. (1990), the Besag-Newell test (1991), and the original spatial scan test of Kulldorff (1997). In addition to applying these tests to the raw counts, I have also applied various smoothing techniques (adjacency, distance-based, and Besag-York-Mollie model) a priori to see how this may affect the ability of these tests to detect clusters.
+
+```{r map, fig.align='center', fig.cap="Opioid Overdoses in Georga", echo = FALSE}
+map
+```
+
+See below for a listing of the clusters, ordered by test. Counties are included along with: 1) Total number of deaths, 2) expected number of deaths, and 3) mortality rate (per 1,000).
+
+```{r, echo = FALSE}
+clusters |>
+  sf::st_drop_geometry() |>
+  filter(!is.na(cluster_id)) |>
+  arrange(test, cluster_id, desc(Deaths)) |>
+  select(Geography, Year, Deaths, eDeaths, MR, test, cluster_id) |>
+  mutate(cty_deaths = paste0(Geography, ' (', Deaths, ', ', round(eDeaths), ', ', round(MR, 1), ')'),
+         test = factor(test, levels = c('bn','tb','kd'),
+                       labels = c('Besag and Newell','Turnbull','Kulldorff'))) |>
+  summarise(geo_list = paste(unique(cty_deaths), collapse = ', '),
+            .by = c(test, cluster_id)) |>
+  kbl(col.names = c('Test','Cluster ID','Cluster Members (# Death, # Expected, Mortality Rate)'), align = 'lll',
+      caption = 'Listing of Identified Clusters') |>
+  kable_styling(bootstrap_options = c('striped','hover','condensed','responsive'), 
+                full_width = FALSE, fixed_thead = TRUE) |>
+  collapse_rows(columns = 1, valign = 'top') |>
+  column_spec(1, width = "10%") |>
+  column_spec(2, width = "20%") |>
+  column_spec(3, width = "70%") |>
+  scroll_box(width = "100%", height = "500px")
+```
+
+<!-- The `targets` dependency graph helps your readers understand the steps of your pipeline at a high level. -->
+
+<!-- ```{r} -->
+<!-- tar_visnetwork() -->
+<!-- ``` -->
+
+<!-- At this point, you can go back and run `{targets}` chunks in interactive mode without interfering with the code or data of the non-interactive pipeline. -->
