@@ -1,3 +1,8 @@
+# Program Name: cluster.R
+# Author:       Jacob Englert
+# Date:         05MAY2022
+# Purpose:      Augment a dataset with clusters found using Turnbull, Besage &
+#               Newell, and Kulldorff approaches.
 
 # Obtain centroid coordinates
 get_coords <- function(data){
@@ -15,9 +20,11 @@ find_clusters <- function(obs, pop, exp = sum(obs) / sum(pop) * pop,
   
   # Quiets noisy functions
   quiet <- function(x) { 
-    sink(tempfile()) 
-    on.exit(sink()) 
-    invisible(force(x)) 
+    suppressWarnings({
+      sink(tempfile()) 
+      on.exit(sink()) 
+      invisible(force(x))
+    })
   } 
   
   # Turnbull (1990)
@@ -27,9 +34,9 @@ find_clusters <- function(obs, pop, exp = sum(obs) / sum(pop) * pop,
                                     coords = coords, longlat = longlat))
   
   # Besag and Newell (1991)
-  bn_test <- smerc::bn.test(cases = obs, pop = pop, ex = exp,
-                            cstar = bn_cstar, alpha = alpha, 
-                            coords = coords, longlat = longlat)
+  bn_test <- quiet(smerc::bn.test(cases = obs, pop = pop, ex = exp,
+                                  cstar = bn_cstar, alpha = alpha, 
+                                  coords = coords, longlat = longlat))
   
   # Kulldorff (1997)
   kd_test <- quiet(smerc::scan.test(cases = obs, pop = pop, ex = exp,

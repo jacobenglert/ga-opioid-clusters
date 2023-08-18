@@ -1,0 +1,46 @@
+---
+output: github_document
+always_allow_html: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(tidyverse.quiet = TRUE)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+# Opioid Overdose Mortality in Georgia
+
+This repository is home to my own personal analysis of opioid overdose data in Georgia. In particular, I apply three difference spatial clustering tests to opioid overdose mortality data in Georgia, obtained from the Online Analytical Statistical Information System ([OASIS](https://oasis.state.ga.us)). These tests include the Cluster Evaluation Permutation Procedure test of [Turnbull et al. (1990)](https://doi.org/10.1093/oxfordjournals.aje.a115775), the [Besag-Newell test (1991)](https://doi.org/10.2307/2982708), and the original spatial scan test of [Kulldorff (1997)](https://doi.org/10.1080/03610929708831995).
+
+In addition to applying these tests to the raw counts reported by OASIS, I have also applied various smoothing techniques (adjacency, distance-based, and Bayesian via the BYM model) a priori to see how this may affect the ability of these tests to detect clusters. The figure below demonstrates the clusters, or "hot-spots" determined by each combination of methods for the year 2021.
+
+```{r map, fig.align='center', fig.cap="Opioid Overdoses in Georga", echo = FALSE}
+include_graphics(here::here('Figures','cluster_map.png'))
+```
+
+See below for a listing of the clusters, ordered by test. Counties are included along with: 1) Total number of deaths, 2) expected number of deaths, and 3) mortality rate (per 1,000).
+
+```{r, echo = FALSE}
+targets::tar_load(clusters)
+clusters |>
+  sf::st_drop_geometry() |>
+  filter(!is.na(cluster_id)) |>
+  arrange(test, cluster_id, desc(Deaths)) |>
+  select(Geography, Year, Deaths, eDeaths, MR, test, cluster_id) |>
+  mutate(cty_deaths = paste0(Geography, ' (', Deaths, ', ', round(eDeaths), ', ', round(MR, 1), ')'),
+         test = factor(test, levels = c('bn','tb','kd'),
+                       labels = c('Besag and Newell','Turnbull','Kulldorff'))) |>
+  summarise(geo_list = paste(unique(cty_deaths), collapse = ', '),
+            .by = c(test, cluster_id)) |>
+  kbl(col.names = c('Test','Cluster ID','Cluster Members (# Death, # Expected, Mortality Rate)'), align = 'lll',
+      caption = 'Listing of Identified Clusters') |>
+  collapse_rows(columns = 1, valign = 'top') |>
+  column_spec(1, width = "10%") |>
+  column_spec(2, width = "20%") |>
+  column_spec(3, width = "70%")
+```
+
+Power analysis tbd...

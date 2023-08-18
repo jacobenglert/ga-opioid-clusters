@@ -1,3 +1,7 @@
+# Program Name: smooth.R
+# Author:       Jacob Englert
+# Date:         05MAY2022
+# Purpose:      Augment a dataset with adjacency, distance, and BYM smoothing.
 
 # Smoothing ---------------------------------------------------------------
 
